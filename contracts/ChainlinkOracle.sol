@@ -6,6 +6,12 @@ import "solidity-bytes-utils/contracts/BytesLib.sol";
 contract ChainlinkOracle {
     using BytesLib for bytes;
 
+    struct Round {
+        uint80 roundId;
+        int128 answer;
+        uint32 timestamp;
+    }
+
     /*
         pub struct Transmission {
             pub slot: u64,
@@ -17,11 +23,14 @@ contract ChainlinkOracle {
         }
     */
     uint private constant transmissionTimestampOffset = 8;  // slot:8
-    uint private constant transmissionAnswerOffset  = 16;   // slot:8 + timestamp:4 + _padding0:4
+    uint private constant transmissionAnswerOffset = 16;    // slot:8 + timestamp:4 + _padding0:4
 
-    function getRoundData(bytes memory transmission) public pure returns (uint32 timestamp, int128 answer) {
-        timestamp = readLittleEndianUnsigned32(transmission.toUint32(transmissionTimestampOffset));
-        answer = readLittleEndianSigned128(transmission.toUint128(transmissionAnswerOffset));
+    // Data extraction helpers
+
+    function extractRound(uint80 roundId, bytes memory transmission) public pure returns (Round memory) {
+        uint32 timestamp = readLittleEndianUnsigned32(transmission.toUint32(transmissionTimestampOffset));
+        int128 answer = readLittleEndianSigned128(transmission.toUint128(transmissionAnswerOffset));
+        return Round(roundId, answer, timestamp);
     }
 
     // Little endian helpers

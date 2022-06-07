@@ -1,13 +1,13 @@
 const ChainlinkOracle = artifacts.require("ChainlinkOracle");
 
 contract("ChainlinkOracle", () => {
-  let oracle
+  let oracle;
 
   beforeEach(async () => {
     oracle = await ChainlinkOracle.deployed();
   });
 
-  describe(".getRoundData", function () {
+  describe(".extractRound", function () {
     /*
       Raw Transmission data sample:
 
@@ -21,16 +21,24 @@ contract("ChainlinkOracle", () => {
     const transmission = "0x" +
       "242e43080000000040049a6200000000" +
       "556eb502290000000000000000000000" +
-      "00000000000000000000000000000000"
+      "00000000000000000000000000000000";
+
+    const roundIdInput = 31337;
+
+    it('should set round id', async () => {
+      let { roundId } = await oracle.extractRound(roundIdInput, transmission);
+
+      assert.equal(roundId, 31337);
+    });
 
     it('should extract timestamp of a round from transmission struct data', async () => {
-      let { timestamp } = await oracle.getRoundData(transmission);
+      let { timestamp } = await oracle.extractRound(roundIdInput, transmission);
 
       assert.equal(timestamp, 1654260800);
     });
 
     it('should extract answer of a round from transmission struct data', async () => {
-      let { answer } = await oracle.getRoundData(transmission);
+      let { answer } = await oracle.extractRound(roundIdInput, transmission);
 
       assert.equal(answer, 176139103829);
     });
