@@ -2,13 +2,10 @@ const Web3 = require("web3");
 const fs = require("fs");
 
 const web3 = new Web3(new Web3.providers.HttpProvider("https://proxy.devnet.neonlabs.org/solana"));
-const { abi } = JSON.parse(fs.readFileSync("./build/contracts/ChainlinkOracle.json"));
+const aggregatorV3InterfaceABI = JSON.parse(fs.readFileSync("./AggregatorV3Interface.json"));
 
-// web3.eth.getBlockNumber().then((result) => {
-//   console.log("Latest Ethereum Block is ",result);
-// });
+const contract = new web3.eth.Contract(aggregatorV3InterfaceABI, process.env.FEED_ADDRESS)
 
-// web3.eth.getBalance('0xc0a3EF89a16FeC26bA5eb59Ed0e47Fd38b9A2eb1').then(console.log)
-
-const contract = new web3.eth.Contract(abi, '0x8622028fc7450A5294F29Bc7c0806783d977946F')
-contract.methods.feedAddress().call().then(console.log)
+contract.methods.version().call().then((version) => { console.log("Version:", version) })
+contract.methods.description().call().then((description) => { console.log("description:", description) })
+contract.methods.decimals().call().then((decimals) => { console.log("decimals:", decimals) })
