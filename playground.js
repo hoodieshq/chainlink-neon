@@ -10,5 +10,5 @@ const { abi } = JSON.parse(fs.readFileSync("./build/contracts/ChainlinkOracle.js
 
 // web3.eth.getBalance('0xc0a3EF89a16FeC26bA5eb59Ed0e47Fd38b9A2eb1').then(console.log)
 
-const contract = new web3.eth.Contract(abi, '0x52855887a57d202c3b565C49F3f6da2ed449ceAB')
-contract.methods.version().call().then(console.log)
+const contract = new web3.eth.Contract(abi, '0x8622028fc7450A5294F29Bc7c0806783d977946F')
+contract.methods.feedAddress().call().then(console.log)

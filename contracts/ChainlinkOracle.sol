@@ -19,6 +19,8 @@ contract ChainlinkOracle is AggregatorV3Interface {
         uint256 version;
     }
 
+    bytes32 public feedAddress;
+
     /*
         pub struct Transmission {
             pub slot: u64,
@@ -54,6 +56,10 @@ contract ChainlinkOracle is AggregatorV3Interface {
     uint8 private constant headerDescriptionOffset = 98;    // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32
     uint8 private constant headerDescriptionLength = 32;
     uint8 private constant headerDecimalsOffset = 130;      // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32 + description:32
+
+    constructor(bytes32 _feedAddress) {
+        feedAddress = _feedAddress;
+    }
 
     function decimals() external pure returns (uint8) {
         revert("decimals() not implemented");
