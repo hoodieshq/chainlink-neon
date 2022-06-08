@@ -13,6 +13,12 @@ contract ChainlinkOracle is AggregatorV3Interface {
         uint32 timestamp;
     }
 
+    struct Header {
+        uint8 decimals;
+        string description;
+        uint256 version;
+    }
+
     /*
         pub struct Transmission {
             pub slot: u64,
@@ -23,8 +29,31 @@ contract ChainlinkOracle is AggregatorV3Interface {
             pub _padding2: u64,
         }
     */
-    uint private constant transmissionTimestampOffset = 8;  // slot:8
-    uint private constant transmissionAnswerOffset = 16;    // slot:8 + timestamp:4 + _padding0:4
+    uint8 private constant transmissionTimestampOffset = 8;  // slot:8
+    uint8 private constant transmissionAnswerOffset = 16;    // slot:8 + timestamp:4 + _padding0:4
+
+    /*
+        pub struct Transmissions {
+            pub version: u8,
+            pub state: u8,
+            pub owner: Pubkey,
+            pub proposed_owner: Pubkey,
+            pub writer: Pubkey,
+            /// Raw UTF-8 byte string
+            pub description: [u8; 32],
+            pub decimals: u8,
+            pub flagging_threshold: u32,
+            pub latest_round_id: u32,
+            pub granularity: u8,
+            pub live_length: u32,
+            live_cursor: u32,
+            historical_cursor: u32,
+        }
+    */
+    uint8 private constant headerVersionOffset = 0;
+    uint8 private constant headerDescriptionOffset = 98;    // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32
+    uint8 private constant headerDescriptionLength = 32;
+    uint8 private constant headerDecimalsOffset = 130;      // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32 + description:32
 
     function decimals() external pure returns (uint8) {
         revert("decimals() not implemented");
@@ -72,6 +101,28 @@ contract ChainlinkOracle is AggregatorV3Interface {
         uint32 timestamp = readLittleEndianUnsigned32(rawTransmission.toUint32(transmissionTimestampOffset));
         int128 answer = readLittleEndianSigned128(rawTransmission.toUint128(transmissionAnswerOffset));
         return Round(roundId, answer, timestamp);
+    }
+
+    function extractHeader(bytes memory rawTransmissions) public pure returns (Header memory) {
+        return Header(
+            rawTransmissions.toUint8(headerDecimalsOffset),
+            bytesToString(rawTransmissions.slice(headerDescriptionOffset,headerDescriptionLength)),
+            rawTransmissions.toUint8(headerVersionOffset)
+        );
+    }
+
+    function bytesToString(bytes memory _bytes) private pure returns (string memory) {
+        uint8 length = 0;
+        while(_bytes[length] != 0) {
+            length++;
+        }
+
+        bytes memory bytesArray = new bytes(length);
+        for (uint8 i = 0; i < length; i++) {
+            bytesArray[i] = _bytes[i];
+        }
+
+        return string(bytesArray);
     }
 
     // Little endian helpers
