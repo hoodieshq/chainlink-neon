@@ -2,8 +2,9 @@
 pragma solidity >=0.4.22 <0.9.0;
 
 import "solidity-bytes-utils/contracts/BytesLib.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-contract ChainlinkOracle {
+contract ChainlinkOracle is AggregatorV3Interface {
     using BytesLib for bytes;
 
     struct Round {
@@ -25,11 +26,51 @@ contract ChainlinkOracle {
     uint private constant transmissionTimestampOffset = 8;  // slot:8
     uint private constant transmissionAnswerOffset = 16;    // slot:8 + timestamp:4 + _padding0:4
 
+    function decimals() external pure returns (uint8) {
+        revert("decimals() not implemented");
+    }
+
+    function description() external pure returns (string memory) {
+        revert("description() not implemented");
+    }
+
+    function version() external pure returns (uint256) {
+        revert("version() not implemented");
+    }
+
+    function getRoundData(uint80)
+        external
+        pure
+        returns (
+            uint80,
+            int256,
+            uint256,
+            uint256,
+            uint80
+        )
+    {
+        revert("getRoundData() not implemented");
+    }
+
+    function latestRoundData()
+        external
+        pure
+        returns (
+            uint80,
+            int256,
+            uint256,
+            uint256,
+            uint80
+        )
+    {
+        revert("latestRoundData() not implemented");
+    }
+
     // Data extraction helpers
 
-    function extractRound(uint80 roundId, bytes memory transmission) public pure returns (Round memory) {
-        uint32 timestamp = readLittleEndianUnsigned32(transmission.toUint32(transmissionTimestampOffset));
-        int128 answer = readLittleEndianSigned128(transmission.toUint128(transmissionAnswerOffset));
+    function extractRound(uint80 roundId, bytes memory rawTransmission) public pure returns (Round memory) {
+        uint32 timestamp = readLittleEndianUnsigned32(rawTransmission.toUint32(transmissionTimestampOffset));
+        int128 answer = readLittleEndianSigned128(rawTransmission.toUint128(transmissionAnswerOffset));
         return Round(roundId, answer, timestamp);
     }
 
