@@ -1,15 +1,15 @@
-const HDWalletProvider = require('@truffle/hdwallet-provider');
-const fs = require('fs');
-const mnemonic = fs.readFileSync(".secret").toString().trim();
+const HDWalletProvider = require("@truffle/hdwallet-provider");
+const fs = require("fs");
 
 module.exports = {
   networks: {
     neonlabs: {
       provider: () => {
-          return new HDWalletProvider(
-              mnemonic,
-              "https://proxy.devnet.neonlabs.org/solana",
-          );
+        const mnemonic = fs.readFileSync(".secret").toString().trim();
+        return new HDWalletProvider(
+            mnemonic,
+            "https://proxy.devnet.neonlabs.org/solana",
+        );
       },
       network_id: "245022926",
     },
