@@ -1,11 +1,12 @@
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const fs = require("fs");
+const cwd = process.cwd();
 
 module.exports = {
   networks: {
     neonlabs: {
       provider: () => {
-        const mnemonic = fs.readFileSync(".secret").toString().trim();
+        const mnemonic = fs.readFileSync(cwd + "/.secret").toString().trim();
         return new HDWalletProvider(
             mnemonic,
             "https://proxy.devnet.neonlabs.org/solana",

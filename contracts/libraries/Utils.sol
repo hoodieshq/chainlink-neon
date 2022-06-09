@@ -2,6 +2,7 @@
 pragma solidity >=0.4.22 <0.9.0;
 
 import "solidity-bytes-utils/contracts/BytesLib.sol";
+import "./external/QueryAccount.sol";
 
 library Utils {
     using BytesLib for bytes;
@@ -18,7 +19,13 @@ library Utils {
         uint256 version;
     }
 
+    uint8 private constant descriminatorSize = 8;
+    // https://github.com/smartcontractkit/chainlink-solana/blob/466d7d1795ac665c02cb382ae2a42c3951c7b40c/contracts/programs/store/src/state.rs#L5
+    uint8 private constant headerSize = 192;
+
     /*
+        https://github.com/smartcontractkit/chainlink-solana/blob/466d7d1795ac665c02cb382ae2a42c3951c7b40c/contracts/programs/store/src/state.rs#L25-L32
+
         pub struct Transmission {
             pub slot: u64,
             pub timestamp: u32,
@@ -32,6 +39,8 @@ library Utils {
     uint8 private constant transmissionAnswerOffset = 16;    // slot:8 + timestamp:4 + _padding0:4
 
     /*
+        https://github.com/smartcontractkit/chainlink-solana/blob/466d7d1795ac665c02cb382ae2a42c3951c7b40c/contracts/programs/store/src/state.rs#L47-L62
+
         pub struct Transmissions {
             pub version: u8,
             pub state: u8,
@@ -53,6 +62,17 @@ library Utils {
     uint8 private constant headerDescriptionOffset = 98;    // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32
     uint8 private constant headerDescriptionLength = 32;
     uint8 private constant headerDecimalsOffset = 130;      // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32 + description:32
+
+    function getHeader(bytes32 _feedAddress) public view returns (Header memory) {
+        uint256 feedAddress = uint256(_feedAddress);
+
+        require(QueryAccount.cache(feedAddress, descriminatorSize, headerSize), "failed to update cache");
+
+        (bool success, bytes memory rawTransmissions) = QueryAccount.data(feedAddress, descriminatorSize, headerSize);
+        require(success, "failed to query account data");
+
+        return extractHeader(rawTransmissions);
+    }
 
     // Data extraction helpers
 
