@@ -1,7 +1,11 @@
 const Utils = artifacts.require("Utils");
 
-contract("Utils", async () => {
-  const utils = await Utils.new();
+contract("Utils", () => {
+  let utils;
+
+  beforeEach(async () => {
+    utils = await Utils.deployed();
+  });
 
   describe(".extractRound", () => {
     /*
