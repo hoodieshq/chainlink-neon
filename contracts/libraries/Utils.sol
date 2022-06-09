@@ -13,16 +13,6 @@ library Utils {
         uint32 timestamp;
     }
 
-    struct Header {
-        uint8 decimals;
-        string description;
-        uint256 version;
-    }
-
-    uint8 private constant descriminatorSize = 8;
-    // https://github.com/smartcontractkit/chainlink-solana/blob/466d7d1795ac665c02cb382ae2a42c3951c7b40c/contracts/programs/store/src/state.rs#L5
-    uint8 private constant headerSize = 192;
-
     /*
         https://github.com/smartcontractkit/chainlink-solana/blob/466d7d1795ac665c02cb382ae2a42c3951c7b40c/contracts/programs/store/src/state.rs#L25-L32
 
@@ -37,6 +27,17 @@ library Utils {
     */
     uint8 private constant transmissionTimestampOffset = 8;  // slot:8
     uint8 private constant transmissionAnswerOffset = 16;    // slot:8 + timestamp:4 + _padding0:4
+
+    struct Header {
+        uint8 decimals;
+        string description;
+        uint256 version;
+        uint80 latestRoundId;
+    }
+
+    uint8 private constant descriminatorSize = 8;
+    // https://github.com/smartcontractkit/chainlink-solana/blob/466d7d1795ac665c02cb382ae2a42c3951c7b40c/contracts/programs/store/src/state.rs#L5
+    uint8 private constant headerSize = 192;
 
     /*
         https://github.com/smartcontractkit/chainlink-solana/blob/466d7d1795ac665c02cb382ae2a42c3951c7b40c/contracts/programs/store/src/state.rs#L47-L62
@@ -59,9 +60,16 @@ library Utils {
         }
     */
     uint8 private constant headerVersionOffset = 0;
-    uint8 private constant headerDescriptionOffset = 98;    // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32
+
+    // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32
+    uint8 private constant headerDescriptionOffset = 98;
     uint8 private constant headerDescriptionLength = 32;
-    uint8 private constant headerDecimalsOffset = 130;      // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32 + description:32
+
+    // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32 + description:32
+    uint8 private constant headerDecimalsOffset = 130;
+
+    // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32 + description:32 + decimals:1 + flagging_threshold:4
+    uint8 private constant headerLatestRoundIdOffset = 135;
 
     function getHeader(bytes32 _feedAddress) public view returns (Header memory) {
         uint256 feedAddress = uint256(_feedAddress);
@@ -86,7 +94,8 @@ library Utils {
         return Header(
             rawTransmissions.toUint8(headerDecimalsOffset),
             bytesToString(rawTransmissions.slice(headerDescriptionOffset,headerDescriptionLength)),
-            rawTransmissions.toUint8(headerVersionOffset)
+            rawTransmissions.toUint8(headerVersionOffset),
+            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLatestRoundIdOffset))
         );
     }
 

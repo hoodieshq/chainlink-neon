@@ -93,5 +93,11 @@ contract("Utils", () => {
 
       assert.equal(decimals, 8);
     });
+
+    it('should extract latest round id from header struct data', async () => {
+      let { latestRoundId } = await utils.extractHeader(header);
+
+      assert.equal(latestRoundId, 1638131);
+    });
   });
 });
