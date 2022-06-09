@@ -28,11 +28,17 @@ library Utils {
     uint8 private constant transmissionTimestampOffset = 8;  // slot:8
     uint8 private constant transmissionAnswerOffset = 16;    // slot:8 + timestamp:4 + _padding0:4
 
+    // For publicly exposed fields data types are preserved according to the AggregatorV3Interface signature. The rest
+    // are kept the same as in Transmissions struct for simplicity.
     struct Header {
+        // Publicly exposed
         uint8 decimals;
         string description;
         uint256 version;
         uint80 latestRoundId;
+        // Internal
+        uint32 liveLength;
+        uint32 liveCursor;
     }
 
     uint8 private constant descriminatorSize = 8;
@@ -43,33 +49,29 @@ library Utils {
         https://github.com/smartcontractkit/chainlink-solana/blob/466d7d1795ac665c02cb382ae2a42c3951c7b40c/contracts/programs/store/src/state.rs#L47-L62
 
         pub struct Transmissions {
-            pub version: u8,
-            pub state: u8,
-            pub owner: Pubkey,
-            pub proposed_owner: Pubkey,
-            pub writer: Pubkey,
+            pub version: u8,                1
+            pub state: u8,                  1
+            pub owner: Pubkey,              32
+            pub proposed_owner: Pubkey,     32
+            pub writer: Pubkey,             32
             /// Raw UTF-8 byte string
-            pub description: [u8; 32],
-            pub decimals: u8,
-            pub flagging_threshold: u32,
-            pub latest_round_id: u32,
-            pub granularity: u8,
-            pub live_length: u32,
-            live_cursor: u32,
-            historical_cursor: u32,
+            pub description: [u8; 32],      32
+            pub decimals: u8,               1
+            pub flagging_threshold: u32,    4
+            pub latest_round_id: u32,       4
+            pub granularity: u8,            1
+            pub live_length: u32,           4
+            live_cursor: u32,               4
+            historical_cursor: u32,         4
         }
     */
     uint8 private constant headerVersionOffset = 0;
-
-    // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32
     uint8 private constant headerDescriptionOffset = 98;
     uint8 private constant headerDescriptionLength = 32;
-
-    // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32 + description:32
     uint8 private constant headerDecimalsOffset = 130;
-
-    // version:1 + state:1 + owner:32 + proposed_owner:32 + writer:32 + description:32 + decimals:1 + flagging_threshold:4
     uint8 private constant headerLatestRoundIdOffset = 135;
+    uint8 private constant headerLiveLength = 140;
+    uint8 private constant headerLiveCursor = 144;
 
     function getHeader(bytes32 _feedAddress) public view returns (Header memory) {
         uint256 feedAddress = uint256(_feedAddress);
@@ -92,10 +94,12 @@ library Utils {
 
     function extractHeader(bytes memory rawTransmissions) public pure returns (Header memory) {
         return Header(
-            rawTransmissions.toUint8(headerDecimalsOffset),
+            rawTransmissions.toUint8(headerDecimalsOffset), // uint8 is identical in little and big endians
             bytesToString(rawTransmissions.slice(headerDescriptionOffset,headerDescriptionLength)),
-            rawTransmissions.toUint8(headerVersionOffset),
-            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLatestRoundIdOffset))
+            rawTransmissions.toUint8(headerVersionOffset),  // uint8 is identical in little and big endians
+            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLatestRoundIdOffset)),
+            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveLength)),
+            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveCursor))
         );
     }
 

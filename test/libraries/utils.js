@@ -99,5 +99,17 @@ contract("Utils", () => {
 
       assert.equal(latestRoundId, 1638131);
     });
+
+    it('should extract length of the live ring buffer from header struct data', async () => {
+      let { liveLength } = await utils.extractHeader(header);
+
+      assert.equal(liveLength, 1024);
+    });
+
+    it('should extract cursor of the live ring buffer from header struct data', async () => {
+      let { liveCursor } = await utils.extractHeader(header);
+
+      assert.equal(liveCursor, 755);
+    });
   });
 });
