@@ -2,25 +2,23 @@
 pragma solidity >=0.4.22 <0.9.0;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-import "./libraries/Utils.sol";
+import { Utils } from "./libraries/Utils.sol";
 
 contract ChainlinkOracle is AggregatorV3Interface {
     bytes32 public feedAddress;
+    uint256 public version;
+    string public description;
+    uint8 public decimals;
 
-    constructor(bytes32 _feedAddress) {
+    constructor(bytes32 _feedAddress, bool isOnNeonEVM) {
         feedAddress = _feedAddress;
-    }
 
-    function decimals() external pure returns (uint8) {
-        revert("decimals() not implemented");
-    }
-
-    function description() external pure returns (string memory) {
-        revert("description() not implemented");
-    }
-
-    function version() external pure returns (uint256) {
-        revert("version() not implemented");
+        if (isOnNeonEVM) {
+            Utils.Header memory header = Utils.getHeader(feedAddress);
+            version = header.version;
+            description = header.description;
+            decimals = header.decimals;
+        }
     }
 
     function getRoundData(uint80)
