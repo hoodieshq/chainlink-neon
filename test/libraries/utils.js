@@ -93,5 +93,39 @@ contract("Utils", () => {
 
       assert.equal(decimals, 8);
     });
+
+    it('should extract latest round id from header struct data', async () => {
+      let { latestRoundId } = await utils.extractHeader(header);
+
+      assert.equal(latestRoundId, 1638131);
+    });
+
+    it('should extract length of the live ring buffer from header struct data', async () => {
+      let { liveLength } = await utils.extractHeader(header);
+
+      assert.equal(liveLength, 1024);
+    });
+
+    it('should extract cursor of the live ring buffer from header struct data', async () => {
+      let { liveCursor } = await utils.extractHeader(header);
+
+      assert.equal(liveCursor, 755);
+    });
   });
+
+  describe(".leftShiftRingbufferCursor", () => {
+    const length = 1024;
+
+    it('left shifts cursor by the number of steps', async () => {
+      let cursor = await utils.leftShiftRingbufferCursor(100, 1, length);
+
+      assert.equal(cursor, 99);
+    });
+
+    it('takes into account ringbuffer wraparound', async () => {
+      let cursor = await utils.leftShiftRingbufferCursor(0, 1, length);
+
+      assert.equal(cursor, 1023);
+    });
+  })
 });
