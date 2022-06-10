@@ -17,16 +17,17 @@ library Utils {
         https://github.com/smartcontractkit/chainlink-solana/blob/466d7d1795ac665c02cb382ae2a42c3951c7b40c/contracts/programs/store/src/state.rs#L25-L32
 
         pub struct Transmission {
-            pub slot: u64,
-            pub timestamp: u32,
-            pub _padding0: u32,
-            pub answer: i128,
-            pub _padding1: u64,
-            pub _padding2: u64,
+            pub slot: u64,                  8
+            pub timestamp: u32,             4
+            pub _padding0: u32,             4
+            pub answer: i128,               16
+            pub _padding1: u64,             8
+            pub _padding2: u64,             8
         }
     */
-    uint8 private constant transmissionTimestampOffset = 8;  // slot:8
-    uint8 private constant transmissionAnswerOffset = 16;    // slot:8 + timestamp:4 + _padding0:4
+    uint8 private constant transmissionSize = 48;
+    uint8 private constant transmissionTimestampOffset = 8;
+    uint8 private constant transmissionAnswerOffset = 16;
 
     // For publicly exposed fields data types are preserved according to the AggregatorV3Interface signature. The rest
     // are kept the same as in Transmissions struct for simplicity.
@@ -82,6 +83,31 @@ library Utils {
         require(success, "failed to query account data");
 
         return extractHeader(rawTransmissions);
+    }
+
+    function getLatestRound(bytes32 _feedAddress) public view returns (Round memory) {
+        uint256 feedAddress = uint256(_feedAddress);
+        Header memory header = getHeader(_feedAddress);
+
+        // Latest round is the previous one before the live cursor. Handle ringbuffer wraparound.
+        uint32 latestRoundCursor = leftShiftRingbufferCursor(header.liveCursor, 1, header.liveLength);
+        uint32 latestRoundOffset = descriminatorSize + headerSize + transmissionSize * latestRoundCursor;
+
+        require(QueryAccount.cache(feedAddress, latestRoundOffset, transmissionSize), "failed to update cache");
+
+        (bool success, bytes memory rawTransmission) = QueryAccount.data(feedAddress, latestRoundOffset, transmissionSize);
+        require(success, "failed to query account data");
+
+        return extractRound(header.latestRoundId, rawTransmission);
+    }
+
+    // Ringbuffer helpers
+
+    function leftShiftRingbufferCursor(uint32 currentCursor, uint32 leftShiftItems, uint32 length) public pure returns (uint32) {
+        require(currentCursor < length, "currentCursor is out of bounds");
+        require(leftShiftItems < length, "left shift is out of bounds");
+
+        return (currentCursor + length - leftShiftItems ) % length;
     }
 
     // Data extraction helpers

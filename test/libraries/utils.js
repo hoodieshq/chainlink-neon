@@ -112,4 +112,20 @@ contract("Utils", () => {
       assert.equal(liveCursor, 755);
     });
   });
+
+  describe(".leftShiftRingbufferCursor", () => {
+    const length = 1024;
+
+    it('left shifts cursor by the number of steps', async () => {
+      let cursor = await utils.leftShiftRingbufferCursor(100, 1, length);
+
+      assert.equal(cursor, 99);
+    });
+
+    it('takes into account ringbuffer wraparound', async () => {
+      let cursor = await utils.leftShiftRingbufferCursor(0, 1, length);
+
+      assert.equal(cursor, 1023);
+    });
+  })
 });
