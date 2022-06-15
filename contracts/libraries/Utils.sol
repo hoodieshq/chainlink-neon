@@ -41,6 +41,7 @@ library Utils {
         uint32 liveLength;
         uint32 liveCursor;
         uint32 historicalCursor;
+        uint8 granularity;
     }
 
     uint8 private constant descriminatorSize = 8;
@@ -72,6 +73,7 @@ library Utils {
     uint8 private constant headerDescriptionLength = 32;
     uint8 private constant headerDecimalsOffset = 130;
     uint8 private constant headerLatestRoundIdOffset = 135;
+    uint8 private constant headerGranularityOffset = 139;
     uint8 private constant headerLiveLength = 140;
     uint8 private constant headerLiveCursor = 144;
     uint8 private constant headerHistoricalCursor = 148;
@@ -122,13 +124,14 @@ library Utils {
 
     function extractHeader(bytes memory rawTransmissions) public pure returns (Header memory) {
         return Header(
-            rawTransmissions.toUint8(headerDecimalsOffset), // uint8 is identical in little and big endians
+            rawTransmissions.toUint8(headerDecimalsOffset),     // uint8 is identical in little and big endians
             bytesToString(rawTransmissions.slice(headerDescriptionOffset,headerDescriptionLength)),
-            rawTransmissions.toUint8(headerVersionOffset),  // uint8 is identical in little and big endians
+            rawTransmissions.toUint8(headerVersionOffset),      // uint8 is identical in little and big endians
             readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLatestRoundIdOffset)),
             readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveLength)),
             readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveCursor)),
-            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerHistoricalCursor))
+            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerHistoricalCursor)),
+            rawTransmissions.toUint8(headerGranularityOffset)   // uint8 is identical in little and big endians
         );
     }
 
