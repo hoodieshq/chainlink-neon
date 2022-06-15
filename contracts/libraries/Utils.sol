@@ -97,12 +97,7 @@ library Utils {
         uint32 latestRoundCursor = leftShiftRingbufferCursor(header.liveCursor, 1, header.liveLength);
         uint32 latestRoundOffset = discriminatorSize + headerSize + transmissionSize * latestRoundCursor;
 
-        require(QueryAccount.cache(feedAddress, latestRoundOffset, transmissionSize), "failed to update cache");
-
-        (bool success, bytes memory rawTransmission) = QueryAccount.data(feedAddress, latestRoundOffset, transmissionSize);
-        require(success, "failed to query account data");
-
-        return extractRound(header.latestRoundId, rawTransmission);
+        return getRound(feedAddress, latestRoundOffset, header.latestRoundId);
     }
 
     function getRoundbyId(bytes32 _feedAddress, uint80 _roundId) public view returns (Round memory) {
