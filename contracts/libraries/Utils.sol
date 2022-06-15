@@ -44,7 +44,7 @@ library Utils {
         uint8 granularity;
     }
 
-    uint8 private constant descriminatorSize = 8;
+    uint8 private constant discriminatorSize = 8;
     // https://github.com/smartcontractkit/chainlink-solana/blob/466d7d1795ac665c02cb382ae2a42c3951c7b40c/contracts/programs/store/src/state.rs#L5
     uint8 private constant headerSize = 192;
 
@@ -81,9 +81,9 @@ library Utils {
     function getHeader(bytes32 _feedAddress) public view returns (Header memory) {
         uint256 feedAddress = uint256(_feedAddress);
 
-        require(QueryAccount.cache(feedAddress, descriminatorSize, headerSize), "failed to update cache");
+        require(QueryAccount.cache(feedAddress, discriminatorSize, headerSize), "failed to update cache");
 
-        (bool success, bytes memory rawTransmissions) = QueryAccount.data(feedAddress, descriminatorSize, headerSize);
+        (bool success, bytes memory rawTransmissions) = QueryAccount.data(feedAddress, discriminatorSize, headerSize);
         require(success, "failed to query account data");
 
         return extractHeader(rawTransmissions);
@@ -95,7 +95,7 @@ library Utils {
 
         // Latest round is the previous one before the live cursor. Handle ringbuffer wraparound.
         uint32 latestRoundCursor = leftShiftRingbufferCursor(header.liveCursor, 1, header.liveLength);
-        uint32 latestRoundOffset = descriminatorSize + headerSize + transmissionSize * latestRoundCursor;
+        uint32 latestRoundOffset = discriminatorSize + headerSize + transmissionSize * latestRoundCursor;
 
         require(QueryAccount.cache(feedAddress, latestRoundOffset, transmissionSize), "failed to update cache");
 
@@ -124,7 +124,7 @@ library Utils {
                 index = header.liveCursor - offset;
             }
 
-            roundOffset = descriminatorSize + headerSize + transmissionSize * index;
+            roundOffset = discriminatorSize + headerSize + transmissionSize * index;
         } else {
             revert("No data present");
         }
