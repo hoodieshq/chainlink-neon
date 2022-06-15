@@ -12,3 +12,9 @@ contract.methods.decimals().call().then((decimals) => { console.log("decimals:",
 contract.methods.latestRoundData().call().then(({ roundId, answer, startedAt, updatedAt, answeredInRound }) => {
   console.log("latestRoundData:", { roundId, answer, startedAt, updatedAt, answeredInRound })
 })
+
+contract.methods.getRoundData(process.env.ROUND).call()
+  .then(({ roundId, answer, startedAt, updatedAt, answeredInRound }) => {
+  console.log("getRoundData:", { roundId, answer, startedAt, updatedAt, answeredInRound })
+  })
+  .catch(console.log)

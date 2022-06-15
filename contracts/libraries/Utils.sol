@@ -40,9 +40,11 @@ library Utils {
         // Internal
         uint32 liveLength;
         uint32 liveCursor;
+        uint32 historicalCursor;
+        uint8 granularity;
     }
 
-    uint8 private constant descriminatorSize = 8;
+    uint8 private constant discriminatorSize = 8;
     // https://github.com/smartcontractkit/chainlink-solana/blob/466d7d1795ac665c02cb382ae2a42c3951c7b40c/contracts/programs/store/src/state.rs#L5
     uint8 private constant headerSize = 192;
 
@@ -71,15 +73,17 @@ library Utils {
     uint8 private constant headerDescriptionLength = 32;
     uint8 private constant headerDecimalsOffset = 130;
     uint8 private constant headerLatestRoundIdOffset = 135;
-    uint8 private constant headerLiveLength = 140;
-    uint8 private constant headerLiveCursor = 144;
+    uint8 private constant headerGranularityOffset = 139;
+    uint8 private constant headerLiveLengthOffset = 140;
+    uint8 private constant headerLiveCursorOffset = 144;
+    uint8 private constant headerHistoricalCursorOffset = 148;
 
     function getHeader(bytes32 _feedAddress) public view returns (Header memory) {
         uint256 feedAddress = uint256(_feedAddress);
 
-        require(QueryAccount.cache(feedAddress, descriminatorSize, headerSize), "failed to update cache");
+        require(QueryAccount.cache(feedAddress, discriminatorSize, headerSize), "failed to update cache");
 
-        (bool success, bytes memory rawTransmissions) = QueryAccount.data(feedAddress, descriminatorSize, headerSize);
+        (bool success, bytes memory rawTransmissions) = QueryAccount.data(feedAddress, discriminatorSize, headerSize);
         require(success, "failed to query account data");
 
         return extractHeader(rawTransmissions);
@@ -91,14 +95,37 @@ library Utils {
 
         // Latest round is the previous one before the live cursor. Handle ringbuffer wraparound.
         uint32 latestRoundCursor = leftShiftRingbufferCursor(header.liveCursor, 1, header.liveLength);
-        uint32 latestRoundOffset = descriminatorSize + headerSize + transmissionSize * latestRoundCursor;
+        uint32 latestRoundOffset = discriminatorSize + headerSize + transmissionSize * latestRoundCursor;
 
-        require(QueryAccount.cache(feedAddress, latestRoundOffset, transmissionSize), "failed to update cache");
+        return getRound(feedAddress, latestRoundOffset, header.latestRoundId);
+    }
 
-        (bool success, bytes memory rawTransmission) = QueryAccount.data(feedAddress, latestRoundOffset, transmissionSize);
-        require(success, "failed to query account data");
+    function getRoundbyId(bytes32 _feedAddress, uint80 _roundId) public view returns (Round memory) {
+        uint256 feedAddress = uint256(_feedAddress);
+        Header memory header = getHeader(_feedAddress);
 
-        return extractRound(header.latestRoundId, rawTransmission);
+        uint80 liveStartRoundId = header.latestRoundId - (header.liveLength - 1);
+        uint80 historicalEndRoundId = header.latestRoundId - (header.latestRoundId % header.granularity);
+        uint80 historicalStartRoundId = historicalEndRoundId - (header.granularity * header.historicalCursor - 1) - 1;
+
+        uint32 roundOffset;
+        if (_roundId >= liveStartRoundId && _roundId <= header.latestRoundId) {
+            uint32 offset = uint32(header.latestRoundId - _roundId) + 1;
+
+            uint32 roundCursor = leftShiftRingbufferCursor(header.liveCursor, offset, header.liveLength);
+            roundOffset = discriminatorSize + headerSize + transmissionSize * roundCursor;
+        } else if (_roundId >= historicalStartRoundId && _roundId <= historicalEndRoundId) {
+            _roundId = _roundId - (_roundId % header.granularity);
+             uint32 offset = uint32(historicalEndRoundId - _roundId) / header.granularity + 1;
+
+            // History is not a ringbuffer yet.
+             uint32 roundCursor = header.historicalCursor - offset;
+             roundOffset = discriminatorSize + headerSize + transmissionSize * (header.liveLength + roundCursor);
+        } else {
+            revert("No data present");
+        }
+
+        return getRound(feedAddress, roundOffset, _roundId);
     }
 
     // Ringbuffer helpers
@@ -112,6 +139,15 @@ library Utils {
 
     // Data extraction helpers
 
+    function getRound(uint256 feedAddress, uint32 offset, uint80 roundId) private view returns (Round memory) {
+        require(QueryAccount.cache(feedAddress, offset, transmissionSize), "failed to update cache");
+
+        (bool success, bytes memory rawTransmission) = QueryAccount.data(feedAddress, offset, transmissionSize);
+        require(success, "failed to query account data");
+
+        return extractRound(roundId, rawTransmission);
+    }
+
     function extractRound(uint80 roundId, bytes memory rawTransmission) public pure returns (Round memory) {
         uint32 timestamp = readLittleEndianUnsigned32(rawTransmission.toUint32(transmissionTimestampOffset));
         int128 answer = readLittleEndianSigned128(rawTransmission.toUint128(transmissionAnswerOffset));
@@ -120,12 +156,14 @@ library Utils {
 
     function extractHeader(bytes memory rawTransmissions) public pure returns (Header memory) {
         return Header(
-            rawTransmissions.toUint8(headerDecimalsOffset), // uint8 is identical in little and big endians
+            rawTransmissions.toUint8(headerDecimalsOffset),     // uint8 is identical in little and big endians
             bytesToString(rawTransmissions.slice(headerDescriptionOffset,headerDescriptionLength)),
-            rawTransmissions.toUint8(headerVersionOffset),  // uint8 is identical in little and big endians
+            rawTransmissions.toUint8(headerVersionOffset),      // uint8 is identical in little and big endians
             readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLatestRoundIdOffset)),
-            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveLength)),
-            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveCursor))
+            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveLengthOffset)),
+            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveCursorOffset)),
+            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerHistoricalCursorOffset)),
+            rawTransmissions.toUint8(headerGranularityOffset)   // uint8 is identical in little and big endians
         );
     }
 

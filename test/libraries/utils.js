@@ -111,6 +111,18 @@ contract("Utils", () => {
 
       assert.equal(liveCursor, 755);
     });
+
+    it('should extract cursor of the historical ring buffer from header struct data', async () => {
+      let { historicalCursor } = await utils.extractHeader(header);
+
+      assert.equal(historicalCursor, 54604);
+    });
+
+    it('should extract granularity of the historical ring buffer from header struct data', async () => {
+      let { granularity } = await utils.extractHeader(header);
+
+      assert.equal(granularity, 30);
+    });
   });
 
   describe(".leftShiftRingbufferCursor", () => {
