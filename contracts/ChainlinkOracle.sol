@@ -21,18 +21,26 @@ contract ChainlinkOracle is AggregatorV3Interface {
         }
     }
 
-    function getRoundData(uint80)
+    function getRoundData(uint80 _roundId)
         external
-        pure
+        view
         returns (
-            uint80,
-            int256,
-            uint256,
-            uint256,
-            uint80
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
         )
     {
-        revert("getRoundData() not implemented");
+        Utils.Round memory round = Utils.getRoundbyId(feedAddress, _roundId);
+
+        return (
+            round.roundId,
+            round.answer,
+            round.timestamp,
+            round.timestamp,
+            round.roundId
+        );
     }
 
     function latestRoundData()

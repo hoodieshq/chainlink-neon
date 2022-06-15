@@ -105,6 +105,33 @@ library Utils {
         return extractRound(header.latestRoundId, rawTransmission);
     }
 
+    function getRoundbyId(bytes32 _feedAddress, uint80 _roundId) public view returns (Round memory) {
+        uint256 feedAddress = uint256(_feedAddress);
+        Header memory header = getHeader(_feedAddress);
+
+        uint80 liveStartRoundId = header.latestRoundId - (header.liveLength - 1);
+        // uint80 historicalEndRoundId = header.latestRoundId - (header.latestRoundId % header.granularity);
+        // uint80 historicalStartRoundId = historicalEndRoundId - (header.granularity * header.historicalCursor - 1) - 1;
+
+        uint32 roundOffset;
+        if (_roundId >= liveStartRoundId && _roundId <= header.latestRoundId) {
+            uint32 offset = uint32(header.latestRoundId - _roundId) + 1;
+
+            uint32 index;
+            if (header.liveCursor < offset) {
+                index = header.liveLength - (offset - header.liveCursor);
+            } else {
+                index = header.liveCursor - offset;
+            }
+
+            roundOffset = descriminatorSize + headerSize + transmissionSize * index;
+        } else {
+            revert("No data present");
+        }
+
+        return getRound(feedAddress, roundOffset, _roundId);
+    }
+
     // Ringbuffer helpers
 
     function leftShiftRingbufferCursor(uint32 currentCursor, uint32 leftShiftItems, uint32 length) public pure returns (uint32) {
@@ -115,6 +142,15 @@ library Utils {
     }
 
     // Data extraction helpers
+
+    function getRound(uint256 feedAddress, uint32 offset, uint80 roundId) private view returns (Round memory) {
+        require(QueryAccount.cache(feedAddress, offset, transmissionSize), "failed to update cache");
+
+        (bool success, bytes memory rawTransmission) = QueryAccount.data(feedAddress, offset, transmissionSize);
+        require(success, "failed to query account data");
+
+        return extractRound(roundId, rawTransmission);
+    }
 
     function extractRound(uint80 roundId, bytes memory rawTransmission) public pure returns (Round memory) {
         uint32 timestamp = readLittleEndianUnsigned32(rawTransmission.toUint32(transmissionTimestampOffset));
