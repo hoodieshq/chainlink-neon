@@ -112,14 +112,8 @@ library Utils {
         if (_roundId >= liveStartRoundId && _roundId <= header.latestRoundId) {
             uint32 offset = uint32(header.latestRoundId - _roundId) + 1;
 
-            uint32 index;
-            if (header.liveCursor < offset) {
-                index = header.liveLength - (offset - header.liveCursor);
-            } else {
-                index = header.liveCursor - offset;
-            }
-
-            roundOffset = discriminatorSize + headerSize + transmissionSize * index;
+            uint32 roundCursor = leftShiftRingbufferCursor(header.liveCursor, offset, header.liveLength);
+            roundOffset = discriminatorSize + headerSize + transmissionSize * roundCursor;
         } else {
             revert("No data present");
         }
