@@ -40,6 +40,7 @@ library Utils {
         // Internal
         uint32 liveLength;
         uint32 liveCursor;
+        uint32 historicalCursor;
     }
 
     uint8 private constant descriminatorSize = 8;
@@ -73,6 +74,7 @@ library Utils {
     uint8 private constant headerLatestRoundIdOffset = 135;
     uint8 private constant headerLiveLength = 140;
     uint8 private constant headerLiveCursor = 144;
+    uint8 private constant headerHistoricalCursor = 148;
 
     function getHeader(bytes32 _feedAddress) public view returns (Header memory) {
         uint256 feedAddress = uint256(_feedAddress);
@@ -125,7 +127,8 @@ library Utils {
             rawTransmissions.toUint8(headerVersionOffset),  // uint8 is identical in little and big endians
             readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLatestRoundIdOffset)),
             readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveLength)),
-            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveCursor))
+            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveCursor)),
+            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerHistoricalCursor))
         );
     }
 
