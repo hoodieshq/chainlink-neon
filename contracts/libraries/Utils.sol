@@ -74,9 +74,9 @@ library Utils {
     uint8 private constant headerDecimalsOffset = 130;
     uint8 private constant headerLatestRoundIdOffset = 135;
     uint8 private constant headerGranularityOffset = 139;
-    uint8 private constant headerLiveLength = 140;
-    uint8 private constant headerLiveCursor = 144;
-    uint8 private constant headerHistoricalCursor = 148;
+    uint8 private constant headerLiveLengthOffset = 140;
+    uint8 private constant headerLiveCursorOffset = 144;
+    uint8 private constant headerHistoricalCursorOffset = 148;
 
     function getHeader(bytes32 _feedAddress) public view returns (Header memory) {
         uint256 feedAddress = uint256(_feedAddress);
@@ -128,9 +128,9 @@ library Utils {
             bytesToString(rawTransmissions.slice(headerDescriptionOffset,headerDescriptionLength)),
             rawTransmissions.toUint8(headerVersionOffset),      // uint8 is identical in little and big endians
             readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLatestRoundIdOffset)),
-            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveLength)),
-            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveCursor)),
-            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerHistoricalCursor)),
+            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveLengthOffset)),
+            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerLiveCursorOffset)),
+            readLittleEndianUnsigned32(rawTransmissions.toUint32(headerHistoricalCursorOffset)),
             rawTransmissions.toUint8(headerGranularityOffset)   // uint8 is identical in little and big endians
         );
     }
