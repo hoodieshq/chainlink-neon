@@ -105,8 +105,8 @@ library Utils {
         Header memory header = getHeader(_feedAddress);
 
         uint80 liveStartRoundId = header.latestRoundId - (header.liveLength - 1);
-        // uint80 historicalEndRoundId = header.latestRoundId - (header.latestRoundId % header.granularity);
-        // uint80 historicalStartRoundId = historicalEndRoundId - (header.granularity * header.historicalCursor - 1) - 1;
+        uint80 historicalEndRoundId = header.latestRoundId - (header.latestRoundId % header.granularity);
+        uint80 historicalStartRoundId = historicalEndRoundId - (header.granularity * header.historicalCursor - 1) - 1;
 
         uint32 roundOffset;
         if (_roundId >= liveStartRoundId && _roundId <= header.latestRoundId) {
@@ -114,6 +114,13 @@ library Utils {
 
             uint32 roundCursor = leftShiftRingbufferCursor(header.liveCursor, offset, header.liveLength);
             roundOffset = discriminatorSize + headerSize + transmissionSize * roundCursor;
+        } else if (_roundId >= historicalStartRoundId && _roundId <= historicalEndRoundId) {
+            _roundId = _roundId - (_roundId % header.granularity);
+             uint32 offset = uint32(historicalEndRoundId - _roundId) / header.granularity + 1;
+
+            // History is not a ringbuffer yet.
+             uint32 roundCursor = header.historicalCursor - offset;
+             roundOffset = discriminatorSize + headerSize + transmissionSize * (header.liveLength + roundCursor);
         } else {
             revert("No data present");
         }
