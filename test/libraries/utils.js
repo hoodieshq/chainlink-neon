@@ -3,8 +3,8 @@ const Utils = artifacts.require("Utils");
 contract("Utils", () => {
   let utils;
 
-  beforeEach(async () => {
-    utils = await Utils.deployed();
+  before(async () => {
+    utils = await Utils.new();
   });
 
   describe(".extractRound", () => {

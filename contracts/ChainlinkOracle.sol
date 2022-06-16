@@ -10,15 +10,13 @@ contract ChainlinkOracle is AggregatorV3Interface {
     string public description;
     uint8 public decimals;
 
-    constructor(bytes32 _feedAddress, bool isOnNeonEVM) {
+    constructor(bytes32 _feedAddress) {
         feedAddress = _feedAddress;
 
-        if (isOnNeonEVM) {
-            Utils.Header memory header = Utils.getHeader(feedAddress);
-            version = header.version;
-            description = header.description;
-            decimals = header.decimals;
-        }
+        Utils.Header memory header = Utils.getHeader(feedAddress);
+        version = header.version;
+        description = header.description;
+        decimals = header.decimals;
     }
 
     function getRoundData(uint80 _roundId)
