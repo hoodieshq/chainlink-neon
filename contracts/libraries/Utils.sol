@@ -29,15 +29,11 @@ library Utils {
     uint8 private constant TRANSMISSION_TIMESTAMP_OFFSET = 8;
     uint8 private constant TRANSMISSION_ANSWER_OFFSET = 16;
 
-    // For publicly exposed fields data types are preserved according to the AggregatorV3Interface signature. The rest
-    // are kept the same as in Transmissions struct for simplicity.
     struct Header {
-        // Publicly exposed
         uint8 decimals;
         string description;
-        uint256 version;
-        uint80 latestRoundId;
-        // Internal
+        uint8 version;
+        uint32 latestRoundId;
         uint32 liveLength;
         uint32 liveCursor;
         uint32 historicalCursor;
