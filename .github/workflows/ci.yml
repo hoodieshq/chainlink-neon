@@ -6,8 +6,11 @@ on:
       - main
   pull_request:
 
+env:
+  FEED_ADDRESS: 0xdeadbeef
+
 jobs:
-  checks:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
@@ -17,9 +20,21 @@ jobs:
         with:
           node-version: '16'
           cache: 'npm'
-      - name: Install Truffle
-        run: npm install truffle -g
       - name: Install dependencies
         run: npm ci
       - name: Run tests with Truffle
-        run: truffle test
+        run: npm run test
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint code with Solhint
+        run: npm run lint

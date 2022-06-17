@@ -1,10 +1,17 @@
 {
+  "scripts": {
+    "deploy:devnet": "truffle migrate --reset --network neonlabs",
+    "lint": "solhint 'contracts/**/*.sol'",
+    "test": "truffle test"
+  },
   "dependencies": {
     "@chainlink/contracts": "^0.4.1",
     "@truffle/hdwallet-provider": "^2.0.8",
     "solidity-bytes-utils": "^0.8.0"
   },
   "devDependencies": {
+    "solhint": "^3.3.7",
+    "truffle": "^5.5.18",
     "web3": "^1.7.3"
   }
 }
