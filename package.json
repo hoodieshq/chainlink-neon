@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "deploy:devnet": "truffle migrate --reset --network neonlabs",
     "lint": "solhint 'contracts/**/*.sol'",
     "test": "truffle test"
   },

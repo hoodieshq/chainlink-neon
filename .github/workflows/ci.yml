@@ -6,6 +6,9 @@ on:
       - main
   pull_request:
 
+env:
+  FEED_ADDRESS: 0xdeadbeef
+
 jobs:
   test:
     runs-on: ubuntu-latest
