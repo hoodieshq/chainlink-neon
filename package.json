@@ -5,6 +5,7 @@
     "solidity-bytes-utils": "^0.8.0"
   },
   "devDependencies": {
+    "solhint": "^3.3.7",
     "web3": "^1.7.3"
   }
 }
