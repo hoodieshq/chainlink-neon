@@ -5,10 +5,10 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "./libraries/Utils.sol";
 
 contract ChainlinkOracle is AggregatorV3Interface {
-    bytes32 public feedAddress;
-    uint256 public version;
-    string public description;
     uint8 public decimals;
+    bytes32 public feedAddress;
+    string public description;
+    uint256 public version;
 
     constructor(bytes32 _feedAddress) {
         feedAddress = _feedAddress;
