@@ -8,7 +8,7 @@ library Utils {
     using BytesLib for bytes;
 
     struct Round {
-        uint80 roundId;
+        uint32 roundId;
         int128 answer;
         uint32 timestamp;
     }
@@ -29,15 +29,11 @@ library Utils {
     uint8 private constant TRANSMISSION_TIMESTAMP_OFFSET = 8;
     uint8 private constant TRANSMISSION_ANSWER_OFFSET = 16;
 
-    // For publicly exposed fields data types are preserved according to the AggregatorV3Interface signature. The rest
-    // are kept the same as in Transmissions struct for simplicity.
     struct Header {
-        // Publicly exposed
         uint8 decimals;
         string description;
-        uint256 version;
-        uint80 latestRoundId;
-        // Internal
+        uint8 version;
+        uint32 latestRoundId;
         uint32 liveLength;
         uint32 liveCursor;
         uint32 historicalCursor;
@@ -78,9 +74,7 @@ library Utils {
     uint8 private constant HEADER_LIVE_CURSOR_OFFSET = 144;
     uint8 private constant HEADER_HISTORICAL_CURSOR_OFFSET = 148;
 
-    function getHeader(bytes32 _feedAddress) public view returns (Header memory) {
-        uint256 feedAddress = uint256(_feedAddress);
-
+    function getHeader(uint256 feedAddress) public view returns (Header memory) {
         require(QueryAccount.cache(feedAddress, DISCRIMINATOR_SIZE, HEADER_SIZE), "failed to update cache");
 
         (bool success, bytes memory rawTransmissions) = QueryAccount.data(feedAddress, DISCRIMINATOR_SIZE, HEADER_SIZE);
@@ -89,9 +83,8 @@ library Utils {
         return extractHeader(rawTransmissions);
     }
 
-    function getLatestRound(bytes32 _feedAddress) public view returns (Round memory) {
-        uint256 feedAddress = uint256(_feedAddress);
-        Header memory header = getHeader(_feedAddress);
+    function getLatestRound(uint256 feedAddress) public view returns (Round memory) {
+        Header memory header = getHeader(feedAddress);
 
         // Latest round is the previous one before the live cursor. Handle ringbuffer wraparound.
         uint32 latestRoundCursor = leftShiftRingbufferCursor(header.liveCursor, 1, header.liveLength);
@@ -100,23 +93,22 @@ library Utils {
         return getRound(feedAddress, latestRoundOffset, header.latestRoundId);
     }
 
-    function getRoundbyId(bytes32 _feedAddress, uint80 _roundId) public view returns (Round memory) {
-        uint256 feedAddress = uint256(_feedAddress);
-        Header memory header = getHeader(_feedAddress);
+    function getRoundbyId(uint256 feedAddress, uint32 roundId) public view returns (Round memory) {
+        Header memory header = getHeader(feedAddress);
 
-        uint80 liveStartRoundId = header.latestRoundId - (header.liveLength - 1);
-        uint80 historicalEndRoundId = header.latestRoundId - (header.latestRoundId % header.granularity);
-        uint80 historicalStartRoundId = historicalEndRoundId - (header.granularity * header.historicalCursor - 1) - 1;
+        uint32 liveStartRoundId = header.latestRoundId - (header.liveLength - 1);
+        uint32 historicalEndRoundId = header.latestRoundId - (header.latestRoundId % header.granularity);
+        uint32 historicalStartRoundId = historicalEndRoundId - (header.granularity * header.historicalCursor - 1) - 1;
 
         uint32 roundOffset;
-        if (_roundId >= liveStartRoundId && _roundId <= header.latestRoundId) {
-            uint32 offset = uint32(header.latestRoundId - _roundId) + 1;
+        if (roundId >= liveStartRoundId && roundId <= header.latestRoundId) {
+            uint32 offset = header.latestRoundId - roundId + 1;
 
             uint32 roundCursor = leftShiftRingbufferCursor(header.liveCursor, offset, header.liveLength);
             roundOffset = DISCRIMINATOR_SIZE + HEADER_SIZE + TRANSMISSION_SIZE * roundCursor;
-        } else if (_roundId >= historicalStartRoundId && _roundId <= historicalEndRoundId) {
-            _roundId = _roundId - (_roundId % header.granularity);
-             uint32 offset = uint32(historicalEndRoundId - _roundId) / header.granularity + 1;
+        } else if (roundId >= historicalStartRoundId && roundId <= historicalEndRoundId) {
+            roundId = roundId - (roundId % header.granularity);
+            uint32 offset = (historicalEndRoundId - roundId) / header.granularity + 1;
 
             // History is not a ringbuffer yet.
              uint32 roundCursor = header.historicalCursor - offset;
@@ -125,7 +117,7 @@ library Utils {
             revert("No data present");
         }
 
-        return getRound(feedAddress, roundOffset, _roundId);
+        return getRound(feedAddress, roundOffset, roundId);
     }
 
     // Ringbuffer helpers
@@ -139,7 +131,7 @@ library Utils {
 
     // Data extraction helpers
 
-    function getRound(uint256 feedAddress, uint32 offset, uint80 roundId) private view returns (Round memory) {
+    function getRound(uint256 feedAddress, uint32 offset, uint32 roundId) private view returns (Round memory) {
         require(QueryAccount.cache(feedAddress, offset, TRANSMISSION_SIZE), "failed to update cache");
 
         (bool success, bytes memory rawTransmission) = QueryAccount.data(feedAddress, offset, TRANSMISSION_SIZE);
@@ -148,7 +140,7 @@ library Utils {
         return extractRound(roundId, rawTransmission);
     }
 
-    function extractRound(uint80 roundId, bytes memory rawTransmission) public pure returns (Round memory) {
+    function extractRound(uint32 roundId, bytes memory rawTransmission) public pure returns (Round memory) {
         uint32 timestamp = readLittleEndianUnsigned32(rawTransmission.toUint32(TRANSMISSION_TIMESTAMP_OFFSET));
         int128 answer = readLittleEndianSigned128(rawTransmission.toUint128(TRANSMISSION_ANSWER_OFFSET));
         return Round(roundId, answer, timestamp);

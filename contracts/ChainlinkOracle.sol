@@ -5,13 +5,13 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "./libraries/Utils.sol";
 
 contract ChainlinkOracle is AggregatorV3Interface {
-    bytes32 public feedAddress;
-    uint256 public version;
-    string public description;
     uint8 public decimals;
+    uint256 public feedAddress;
+    string public description;
+    uint256 public version;
 
     constructor(bytes32 _feedAddress) {
-        feedAddress = _feedAddress;
+        feedAddress = uint256(_feedAddress);
 
         Utils.Header memory header = Utils.getHeader(feedAddress);
         version = header.version;
@@ -30,7 +30,7 @@ contract ChainlinkOracle is AggregatorV3Interface {
             uint80 answeredInRound
         )
     {
-        Utils.Round memory round = Utils.getRoundbyId(feedAddress, _roundId);
+        Utils.Round memory round = Utils.getRoundbyId(feedAddress, uint32(_roundId));
 
         return (
             round.roundId,
