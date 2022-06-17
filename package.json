@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "lint": "solhint 'contracts/**/*.sol'"
+  },
   "dependencies": {
     "@chainlink/contracts": "^0.4.1",
     "@truffle/hdwallet-provider": "^2.0.8",
