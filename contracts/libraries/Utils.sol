@@ -74,9 +74,7 @@ library Utils {
     uint8 private constant HEADER_LIVE_CURSOR_OFFSET = 144;
     uint8 private constant HEADER_HISTORICAL_CURSOR_OFFSET = 148;
 
-    function getHeader(bytes32 _feedAddress) public view returns (Header memory) {
-        uint256 feedAddress = uint256(_feedAddress);
-
+    function getHeader(uint256 feedAddress) public view returns (Header memory) {
         require(QueryAccount.cache(feedAddress, DISCRIMINATOR_SIZE, HEADER_SIZE), "failed to update cache");
 
         (bool success, bytes memory rawTransmissions) = QueryAccount.data(feedAddress, DISCRIMINATOR_SIZE, HEADER_SIZE);
@@ -85,9 +83,8 @@ library Utils {
         return extractHeader(rawTransmissions);
     }
 
-    function getLatestRound(bytes32 _feedAddress) public view returns (Round memory) {
-        uint256 feedAddress = uint256(_feedAddress);
-        Header memory header = getHeader(_feedAddress);
+    function getLatestRound(uint256 feedAddress) public view returns (Round memory) {
+        Header memory header = getHeader(feedAddress);
 
         // Latest round is the previous one before the live cursor. Handle ringbuffer wraparound.
         uint32 latestRoundCursor = leftShiftRingbufferCursor(header.liveCursor, 1, header.liveLength);
@@ -96,9 +93,8 @@ library Utils {
         return getRound(feedAddress, latestRoundOffset, header.latestRoundId);
     }
 
-    function getRoundbyId(bytes32 _feedAddress, uint80 _roundId) public view returns (Round memory) {
-        uint256 feedAddress = uint256(_feedAddress);
-        Header memory header = getHeader(_feedAddress);
+    function getRoundbyId(uint256 feedAddress, uint80 _roundId) public view returns (Round memory) {
+        Header memory header = getHeader(feedAddress);
 
         uint80 liveStartRoundId = header.latestRoundId - (header.liveLength - 1);
         uint80 historicalEndRoundId = header.latestRoundId - (header.latestRoundId % header.granularity);

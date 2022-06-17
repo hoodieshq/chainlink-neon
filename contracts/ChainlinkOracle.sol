@@ -6,12 +6,12 @@ import "./libraries/Utils.sol";
 
 contract ChainlinkOracle is AggregatorV3Interface {
     uint8 public decimals;
-    bytes32 public feedAddress;
+    uint256 public feedAddress;
     string public description;
     uint256 public version;
 
     constructor(bytes32 _feedAddress) {
-        feedAddress = _feedAddress;
+        feedAddress = uint256(_feedAddress);
 
         Utils.Header memory header = Utils.getHeader(feedAddress);
         version = header.version;
