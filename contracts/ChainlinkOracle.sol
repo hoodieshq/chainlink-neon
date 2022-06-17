@@ -30,7 +30,7 @@ contract ChainlinkOracle is AggregatorV3Interface {
             uint80 answeredInRound
         )
     {
-        Utils.Round memory round = Utils.getRoundbyId(feedAddress, _roundId);
+        Utils.Round memory round = Utils.getRoundbyId(feedAddress, uint32(_roundId));
 
         return (
             round.roundId,
