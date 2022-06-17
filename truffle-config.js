@@ -4,7 +4,7 @@ const cwd = process.cwd();
 
 module.exports = {
   networks: {
-    neonlabs: {
+    devnet: {
       provider: () => {
         const mnemonic = fs.readFileSync(cwd + "/.secret").toString().trim();
         return new HDWalletProvider(
