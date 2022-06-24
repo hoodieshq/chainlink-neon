@@ -120,6 +120,16 @@ library Utils {
         return getRound(feedAddress, roundOffset, roundId);
     }
 
+
+    function getHistoricalLength(uint256 feedAddress, uint32 liveLength) public view returns (uint32) {
+        require(QueryAccount.cache(feedAddress, 0, 1), "failed to update cache");
+
+        (bool success, uint256 feedDataLength) = QueryAccount.length(feedAddress);
+        require(success, "failed to query account length");
+
+        return uint32(feedDataLength - DISCRIMINATOR_SIZE - HEADER_SIZE) / TRANSMISSION_SIZE - liveLength;
+    }
+
     // Ringbuffer helpers
 
     function leftShiftRingbufferCursor(uint32 currentCursor, uint32 leftShiftItems, uint32 length) public pure returns (uint32) {

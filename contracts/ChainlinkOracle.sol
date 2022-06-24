@@ -9,6 +9,7 @@ contract ChainlinkOracle is AggregatorV3Interface {
     uint256 public feedAddress;
     string public description;
     uint256 public version;
+    uint32 private historicalLength;
 
     constructor(bytes32 _feedAddress) {
         feedAddress = uint256(_feedAddress);
@@ -17,6 +18,7 @@ contract ChainlinkOracle is AggregatorV3Interface {
         version = header.version;
         description = header.description;
         decimals = header.decimals;
+        historicalLength = Utils.getHistoricalLength(feedAddress, header.liveLength);
     }
 
     function getRoundData(uint80 _roundId)
