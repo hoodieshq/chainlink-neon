@@ -110,8 +110,7 @@ library Utils {
             roundId = roundId - (roundId % header.granularity);
             uint32 offset = (historicalEndRoundId - roundId) / header.granularity + 1;
 
-            // History is not a ringbuffer yet.
-             uint32 roundCursor = header.historicalCursor - offset;
+             uint32 roundCursor = leftShiftRingbufferCursor(header.historicalCursor, offset, historicalLength);
              roundOffset = DISCRIMINATOR_SIZE + HEADER_SIZE + TRANSMISSION_SIZE * (header.liveLength + roundCursor);
         } else {
             revert("No data present");
