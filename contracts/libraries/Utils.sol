@@ -93,12 +93,12 @@ library Utils {
         return getRound(feedAddress, latestRoundOffset, header.latestRoundId);
     }
 
-    function getRoundbyId(uint256 feedAddress, uint32 roundId) public view returns (Round memory) {
+    function getRoundbyId(uint256 feedAddress, uint32 roundId, uint32 historicalLength) public view returns (Round memory) {
         Header memory header = getHeader(feedAddress);
 
         uint32 liveStartRoundId = saturatingSub(header.latestRoundId, header.liveLength - 1);
         uint32 historicalEndRoundId = header.latestRoundId - (header.latestRoundId % header.granularity);
-        uint32 historicalStartRoundId = historicalEndRoundId - (header.granularity * header.historicalCursor - 1) - 1;
+        uint32 historicalStartRoundId = saturatingSub(historicalEndRoundId, header.granularity * (historicalLength - 1));
 
         uint32 roundOffset;
         if (roundId >= liveStartRoundId && roundId <= header.latestRoundId) {
