@@ -18,6 +18,7 @@ contract ChainlinkOracle is AggregatorV3Interface {
         version = header.version;
         description = header.description;
         decimals = header.decimals;
+        // Save historical ringbuffer length for future use.
         historicalLength = Utils.getHistoricalLength(feedAddress, header.liveLength);
     }
 

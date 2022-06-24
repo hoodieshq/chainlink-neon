@@ -101,6 +101,8 @@ library Utils {
         uint32 historicalStartRoundId = saturatingSub(historicalEndRoundId, header.granularity * (historicalLength - 1));
 
         uint32 roundOffset;
+
+        // If withing the live range, fetch from it. Otherwise, fetch from the closest pevios in history.
         if (roundId >= liveStartRoundId && roundId <= header.latestRoundId) {
             uint32 offset = header.latestRoundId - roundId + 1;
 
@@ -121,6 +123,7 @@ library Utils {
 
 
     function getHistoricalLength(uint256 feedAddress, uint32 liveLength) public view returns (uint32) {
+        // `QueryAccount.length` requires preliminary caching of account data no matter of the cache lenght.
         require(QueryAccount.cache(feedAddress, 0, 1), "failed to update cache");
 
         (bool success, uint256 feedDataLength) = QueryAccount.length(feedAddress);
