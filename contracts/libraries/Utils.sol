@@ -96,7 +96,7 @@ library Utils {
     function getRoundbyId(uint256 feedAddress, uint32 roundId) public view returns (Round memory) {
         Header memory header = getHeader(feedAddress);
 
-        uint32 liveStartRoundId = header.latestRoundId - (header.liveLength - 1);
+        uint32 liveStartRoundId = saturatingSub(header.latestRoundId, header.liveLength - 1);
         uint32 historicalEndRoundId = header.latestRoundId - (header.latestRoundId % header.granularity);
         uint32 historicalStartRoundId = historicalEndRoundId - (header.granularity * header.historicalCursor - 1) - 1;
 
@@ -185,5 +185,16 @@ library Utils {
         input = ((input << 16) & 0xFFFF0000FFFF0000FFFF0000FFFF0000) | ((input >> 16) & 0x0000FFFF0000FFFF0000FFFF0000FFFF);
         input = ((input << 32) & 0xFFFFFFFF00000000FFFFFFFF00000000) | ((input >> 32) & 0x00000000FFFFFFFF00000000FFFFFFFF);
         return int128((input << 64) | ((input >> 64) & 0xFFFFFFFFFFFFFFFF));
+    }
+
+    // Saturating substraction helpers
+
+    function saturatingSub(uint32 a, uint32 b) private pure returns (uint32) {
+        if (a <= b) {
+            return 0; // type(uint32).min
+        }
+        else {
+            return a - b;
+        }
     }
 }
