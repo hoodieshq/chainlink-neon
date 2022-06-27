@@ -93,34 +93,60 @@ library Utils {
         return getRound(feedAddress, latestRoundOffset, header.latestRoundId);
     }
 
-    function getRoundbyId(uint256 feedAddress, uint32 roundId, uint32 historicalLength) public view returns (Round memory) {
+    function getRoundbyId(uint256 feedAddress, uint32 _roundId, uint32 historicalLength) public view returns (Round memory) {
         Header memory header = getHeader(feedAddress);
-
-        uint32 liveStartRoundId = saturatingSub(header.latestRoundId, header.liveLength - 1);
-        uint32 historicalEndRoundId = header.latestRoundId - (header.latestRoundId % header.granularity);
-        uint32 historicalStartRoundId = saturatingSub(historicalEndRoundId, header.granularity * (historicalLength - 1));
-
-        uint32 roundOffset;
-
-        // If withing the live range, fetch from it. Otherwise, fetch from the closest pevios in history.
-        if (roundId >= liveStartRoundId && roundId <= header.latestRoundId) {
-            uint32 offset = header.latestRoundId - roundId + 1;
-
-            uint32 roundCursor = leftShiftRingbufferCursor(header.liveCursor, offset, header.liveLength);
-            roundOffset = DISCRIMINATOR_SIZE + HEADER_SIZE + TRANSMISSION_SIZE * roundCursor;
-        } else if (roundId >= historicalStartRoundId && roundId <= historicalEndRoundId) {
-            roundId = roundId - (roundId % header.granularity);
-            uint32 offset = (historicalEndRoundId - roundId) / header.granularity + 1;
-
-             uint32 roundCursor = leftShiftRingbufferCursor(header.historicalCursor, offset, historicalLength);
-             roundOffset = DISCRIMINATOR_SIZE + HEADER_SIZE + TRANSMISSION_SIZE * (header.liveLength + roundCursor);
-        } else {
-            revert("No data present");
-        }
+        (uint32 roundPosition, uint32 roundId) = locateRound(
+            _roundId,
+            header.liveCursor,
+            header.liveLength,
+            header.latestRoundId,
+            header.historicalCursor,
+            historicalLength,
+            header.granularity
+        );
+        uint32 roundOffset = DISCRIMINATOR_SIZE + HEADER_SIZE + TRANSMISSION_SIZE * roundPosition;
 
         return getRound(feedAddress, roundOffset, roundId);
     }
 
+    function locateRound(
+        uint32 roundId,
+        uint32 liveCursor,
+        uint32 liveLength,
+        uint32 latestRoundId,
+        uint32 historicalCursor,
+        uint32 historicalLength,
+        uint8 granularity
+    )
+        public
+        pure
+        returns (
+            uint32 position,
+            uint32 correctedRoundId
+        )
+    {
+        uint32 liveStartRoundId = saturatingSub(latestRoundId, liveLength - 1);
+        uint32 historicalEndRoundId = latestRoundId - (latestRoundId % granularity);
+        uint32 historicalStartRoundId = saturatingSub(historicalEndRoundId, granularity * (historicalLength - 1));
+
+        // If withing the live range, fetch from it. Otherwise, fetch from the closest previous in history.
+        if (roundId >= liveStartRoundId && roundId <= latestRoundId) {
+            correctedRoundId = roundId;
+            // + 1 because we're looking for the element before the cursor
+            uint32 offset = latestRoundId - correctedRoundId + 1;
+
+            position = leftShiftRingbufferCursor(liveCursor, offset, liveLength);
+        } else if (roundId >= historicalStartRoundId && roundId <= historicalEndRoundId) {
+            // Find the closest previous round
+            correctedRoundId = roundId - (roundId % granularity);
+            // + 1 because we're looking for the element before the cursor
+            uint32 offset = (historicalEndRoundId - correctedRoundId) / granularity + 1;
+
+            position = liveLength + leftShiftRingbufferCursor(historicalCursor, offset, historicalLength);
+        } else {
+            revert("No data present");
+        }
+    }
 
     function getHistoricalLength(uint256 feedAddress, uint32 liveLength) public view returns (uint32) {
         // `QueryAccount.length` requires preliminary caching of account data no matter of the cache lenght.
@@ -136,7 +162,7 @@ library Utils {
 
     function leftShiftRingbufferCursor(uint32 currentCursor, uint32 leftShiftItems, uint32 length) public pure returns (uint32) {
         require(currentCursor < length, "currentCursor is out of bounds");
-        require(leftShiftItems < length, "left shift is out of bounds");
+        require(leftShiftItems <= length, "left shift is out of bounds");
 
         return (currentCursor + length - leftShiftItems ) % length;
     }
