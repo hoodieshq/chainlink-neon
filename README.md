@@ -4,6 +4,11 @@
 
 A smart contract making Chainlink Data Feeds from Solana network available on Neon EVM.
 
+## Usage
+
+Once deployed, the contract implements [`AggregatorV3Interface`](https://docs.chain.link/docs/price-feeds-api-reference/#aggregatorv3interface) according to the best practices of the Chainlink Data Feeds
+usage. Follow the official Chainlink documentation to get the [latest](https://docs.chain.link/docs/get-the-latest-price/) or [historical](https://docs.chain.link/docs/historical-price-data/) prices from the data feeds.
+
 ## Development
 
 ```sh
