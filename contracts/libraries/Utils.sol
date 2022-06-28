@@ -93,38 +93,76 @@ library Utils {
         return getRound(feedAddress, latestRoundOffset, header.latestRoundId);
     }
 
-    function getRoundbyId(uint256 feedAddress, uint32 roundId) public view returns (Round memory) {
+    function getRoundbyId(uint256 feedAddress, uint32 _roundId, uint32 historicalLength) public view returns (Round memory) {
         Header memory header = getHeader(feedAddress);
+        (uint32 roundPosition, uint32 roundId) = locateRound(
+            _roundId,
+            header.liveCursor,
+            header.liveLength,
+            header.latestRoundId,
+            header.historicalCursor,
+            historicalLength,
+            header.granularity
+        );
+        uint32 roundOffset = DISCRIMINATOR_SIZE + HEADER_SIZE + TRANSMISSION_SIZE * roundPosition;
 
-        uint32 liveStartRoundId = header.latestRoundId - (header.liveLength - 1);
-        uint32 historicalEndRoundId = header.latestRoundId - (header.latestRoundId % header.granularity);
-        uint32 historicalStartRoundId = historicalEndRoundId - (header.granularity * header.historicalCursor - 1) - 1;
+        return getRound(feedAddress, roundOffset, roundId);
+    }
 
-        uint32 roundOffset;
-        if (roundId >= liveStartRoundId && roundId <= header.latestRoundId) {
-            uint32 offset = header.latestRoundId - roundId + 1;
+    function locateRound(
+        uint32 roundId,
+        uint32 liveCursor,
+        uint32 liveLength,
+        uint32 latestRoundId,
+        uint32 historicalCursor,
+        uint32 historicalLength,
+        uint8 granularity
+    )
+        public
+        pure
+        returns (
+            uint32 position,
+            uint32 correctedRoundId
+        )
+    {
+        uint32 liveStartRoundId = saturatingSub(latestRoundId, liveLength - 1);
+        uint32 historicalEndRoundId = latestRoundId - (latestRoundId % granularity);
+        uint32 historicalStartRoundId = saturatingSub(historicalEndRoundId, granularity * (historicalLength - 1));
 
-            uint32 roundCursor = leftShiftRingbufferCursor(header.liveCursor, offset, header.liveLength);
-            roundOffset = DISCRIMINATOR_SIZE + HEADER_SIZE + TRANSMISSION_SIZE * roundCursor;
+        // If withing the live range, fetch from it. Otherwise, fetch from the closest previous in history.
+        if (roundId >= liveStartRoundId && roundId <= latestRoundId) {
+            correctedRoundId = roundId;
+            // + 1 because we're looking for the element before the cursor
+            uint32 offset = latestRoundId - correctedRoundId + 1;
+
+            position = leftShiftRingbufferCursor(liveCursor, offset, liveLength);
         } else if (roundId >= historicalStartRoundId && roundId <= historicalEndRoundId) {
-            roundId = roundId - (roundId % header.granularity);
-            uint32 offset = (historicalEndRoundId - roundId) / header.granularity + 1;
+            // Find the closest previous round
+            correctedRoundId = roundId - (roundId % granularity);
+            // + 1 because we're looking for the element before the cursor
+            uint32 offset = (historicalEndRoundId - correctedRoundId) / granularity + 1;
 
-            // History is not a ringbuffer yet.
-             uint32 roundCursor = header.historicalCursor - offset;
-             roundOffset = DISCRIMINATOR_SIZE + HEADER_SIZE + TRANSMISSION_SIZE * (header.liveLength + roundCursor);
+            position = liveLength + leftShiftRingbufferCursor(historicalCursor, offset, historicalLength);
         } else {
             revert("No data present");
         }
+    }
 
-        return getRound(feedAddress, roundOffset, roundId);
+    function getHistoricalLength(uint256 feedAddress, uint32 liveLength) public view returns (uint32) {
+        // `QueryAccount.length` requires preliminary caching of account data no matter of the cache lenght.
+        require(QueryAccount.cache(feedAddress, 0, 1), "failed to update cache");
+
+        (bool success, uint256 feedDataLength) = QueryAccount.length(feedAddress);
+        require(success, "failed to query account length");
+
+        return uint32(feedDataLength - DISCRIMINATOR_SIZE - HEADER_SIZE) / TRANSMISSION_SIZE - liveLength;
     }
 
     // Ringbuffer helpers
 
     function leftShiftRingbufferCursor(uint32 currentCursor, uint32 leftShiftItems, uint32 length) public pure returns (uint32) {
         require(currentCursor < length, "currentCursor is out of bounds");
-        require(leftShiftItems < length, "left shift is out of bounds");
+        require(leftShiftItems <= length, "left shift is out of bounds");
 
         return (currentCursor + length - leftShiftItems ) % length;
     }
@@ -185,5 +223,16 @@ library Utils {
         input = ((input << 16) & 0xFFFF0000FFFF0000FFFF0000FFFF0000) | ((input >> 16) & 0x0000FFFF0000FFFF0000FFFF0000FFFF);
         input = ((input << 32) & 0xFFFFFFFF00000000FFFFFFFF00000000) | ((input >> 32) & 0x00000000FFFFFFFF00000000FFFFFFFF);
         return int128((input << 64) | ((input >> 64) & 0xFFFFFFFFFFFFFFFF));
+    }
+
+    // Saturating substraction helpers
+
+    function saturatingSub(uint32 a, uint32 b) private pure returns (uint32) {
+        if (a <= b) {
+            return 0; // type(uint32).min
+        }
+        else {
+            return a - b;
+        }
     }
 }

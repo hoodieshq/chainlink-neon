@@ -140,4 +140,100 @@ contract("Utils", () => {
       assert.equal(cursor, 1023);
     });
   })
+
+  describe(".locateRound", () => {
+
+    // Transmissions layout
+    // 0   1   2   3   4   5   6   7   8   9   10  11  12  13  14
+    // | Live            | Historical
+    // 0   1   2   3   4 | 0   1   2   3   4   5   6   7   8   9
+    // 36  37  38  34  35| 33  36  9   12  15  18  21  24  27  30
+    //             ^               ^
+    //             liveCursor      historicalCursor
+
+    const liveCursor = 3
+    const liveLength = 5
+    const latestRoundId = 38
+    const historicalCursor = 2
+    const historicalLength = 10
+    const granularity = 3
+
+    async function locate(roundId) {
+      return utils.locateRound(
+        roundId,
+        liveCursor,
+        liveLength,
+        latestRoundId,
+        historicalCursor,
+        historicalLength,
+        granularity
+      );
+    }
+
+    describe('when round is out of range', async () => {
+      it('reverts', async () => {
+        try {
+          await locate(42);
+          throw null;
+        }
+        catch (error) {
+          assert(error, "Expected an error but did not get one");
+          assert(error.message.endsWith("No data present"));
+        }
+      });
+    })
+
+    describe('when round is within the live range', async () => {
+      it('finds position to the left of the live cursor', async () => {
+        const { position, correctedRoundId } = await locate(36);
+
+        assert.equal(correctedRoundId, 36);
+        assert.equal(position, 0);
+      });
+
+      it('finds position of the latest round', async () => {
+        const { position, correctedRoundId } = await locate(38);
+
+        assert.equal(correctedRoundId, 38);
+        assert.equal(position, 2);
+      });
+
+      it('finds position to the right of the live cursor', async () => {
+        const { position, correctedRoundId } = await locate(35);
+
+        assert.equal(correctedRoundId, 35);
+        assert.equal(position, 4);
+      });
+    })
+
+    describe('when round is within the historical range', async () => {
+      it('finds position to the left of the historical cursor', async () => {
+        const { position, correctedRoundId } = await locate(33);
+
+        assert.equal(correctedRoundId, 33);
+        assert.equal(position, 5);
+      });
+
+      it('finds position to the right of the historical cursor', async () => {
+        const { position, correctedRoundId } = await locate(15);
+
+        assert.equal(correctedRoundId, 15);
+        assert.equal(position, 9);
+      });
+
+      it('finds position and corrects round id according to granularity', async () => {
+        const { position, correctedRoundId } = await locate(17);
+
+        assert.equal(correctedRoundId, 15);
+        assert.equal(position, 9);
+      });
+
+      it('finds position when historical cursor points to the round', async () => {
+        const { position, correctedRoundId } = await locate(9);
+
+        assert.equal(correctedRoundId, 9);
+        assert.equal(position, 7);
+      });
+    })
+  })
 });
