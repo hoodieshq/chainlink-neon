@@ -180,6 +180,11 @@ library Utils {
 
     function extractRound(uint32 roundId, bytes memory rawTransmission) public pure returns (Round memory) {
         uint32 timestamp = readLittleEndianUnsigned32(rawTransmission.toUint32(TRANSMISSION_TIMESTAMP_OFFSET));
+
+        // Ported behaviour
+        // https://github.com/smartcontractkit/chainlink/blob/026e9a69dbcb057123264392e1e5a0c2c03e96f0/contracts/src/v0.6/AggregatorFacade.sol#L203
+        require(timestamp > 0, "No data present");
+
         int128 answer = readLittleEndianSigned128(rawTransmission.toUint128(TRANSMISSION_ANSWER_OFFSET));
         return Round(roundId, answer, timestamp);
     }
