@@ -42,6 +42,24 @@ contract("Utils", () => {
 
       assert.equal(answer, 176139103829);
     });
+
+    describe('when transmission is not ready', async () => {
+      const transmission = "0x" +
+      "00000000000000000000000000000000" +
+      "00000000000000000000000000000000" +
+      "00000000000000000000000000000000";
+
+      it('reverts', async () => {
+        try {
+          await utils.extractRound(_roundId, transmission);
+          throw null;
+        }
+        catch (error) {
+          assert(error, "Expected an error but did not get one");
+          assert(error.message.endsWith("No data present"));
+        }
+      });
+    })
   });
 
   describe(".extractRound", () => {
