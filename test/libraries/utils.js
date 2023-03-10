@@ -253,5 +253,33 @@ contract("Utils", () => {
         assert.equal(position, 7);
       });
     })
+
+    describe('when historical data does not present', async () => {
+      const liveCursor = 0
+      const liveLength = 1
+      const latestRoundId = 38
+      const historicalCursor = 0
+      const historicalLength = 0
+      const granularity = 1
+
+      it('reverts', async () => {
+        try {
+          await utils.locateRound(
+            42,
+            liveCursor,
+            liveLength,
+            latestRoundId,
+            historicalCursor,
+            historicalLength,
+            granularity
+          );
+          throw null;
+        }
+        catch (error) {
+          assert(error, "Expected an error but did not get one");
+          assert(error.message.endsWith("No data present"), "Expected no data present error, but received " + error);
+        }
+      });
+    })
   })
 });
