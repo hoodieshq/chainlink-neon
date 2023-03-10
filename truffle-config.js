@@ -1,5 +1,6 @@
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const fs = require("fs");
+
 const cwd = process.cwd();
 
 module.exports = {
@@ -7,10 +8,10 @@ module.exports = {
     devnet: {
       provider: () => {
         const mnemonic = fs.readFileSync(cwd + "/.secret").toString().trim();
-        return new HDWalletProvider(
-            mnemonic,
-            "https://devnet.neonevm.org",
-        );
+        return new HDWalletProvider({
+          mnemonic,
+          providerOrUrl: "https://devnet.neonevm.org",
+        });
       },
       network_id: "245022926",
     },
