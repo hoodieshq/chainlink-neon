@@ -9,7 +9,7 @@ module.exports = {
         const mnemonic = fs.readFileSync(cwd + "/.secret").toString().trim();
         return new HDWalletProvider(
             mnemonic,
-            "https://proxy.devnet.neonlabs.org/solana",
+            "https://devnet.neonevm.org",
         );
       },
       network_id: "245022926",
