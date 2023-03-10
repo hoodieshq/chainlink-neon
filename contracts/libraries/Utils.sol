@@ -127,7 +127,7 @@ library Utils {
     {
         uint32 liveStartRoundId = saturatingSub(latestRoundId, liveLength - 1);
         uint32 historicalEndRoundId = latestRoundId - (latestRoundId % granularity);
-        uint32 historicalStartRoundId = saturatingSub(historicalEndRoundId, granularity * (historicalLength - 1));
+        uint32 historicalStartRoundId = saturatingSub(historicalEndRoundId, granularity * saturatingSub(historicalLength, 1));
 
         // If withing the live range, fetch from it. Otherwise, fetch from the closest previous in history.
         if (roundId >= liveStartRoundId && roundId <= latestRoundId) {
